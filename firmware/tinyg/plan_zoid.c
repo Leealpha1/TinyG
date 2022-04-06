@@ -1,3 +1,4 @@
+//**************************************************************************************************
 /*
  * plan_zoid.c - acceleration managed line planning and motion execution - trapezoid planner
  * This file is part of the TinyG project
@@ -24,7 +25,8 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+*/
+//**************************************************************************************************
 
 #include "tinyg.h"
 #include "config.h"
@@ -32,8 +34,10 @@
 #include "report.h"
 #include "util.h"
 
+
+//**************************************************************************************************
 /*
- * mp_calculate_trapezoid() - calculate trapezoid parameters
+ *  mp_calculate_trapezoid() - calculate trapezoid parameters
  *
  *	This rather brute-force and long-ish function sets section lengths and velocities
  *	based on the line length and velocities requested. It modifies the incoming
@@ -61,9 +65,13 @@
  *	  bf->tail_length		- bf->length allocated to tail
  *
  *	Note: The following conditions must be met on entry:
- *		bf->length must be non-zero (filter these out upstream)
- *		bf->entry_velocity <= bf->cruise_velocity >= bf->exit_velocity
- */
+ *	  bf->length must be non-zero (filter these out upstream)
+ *	  bf->entry_velocity <= bf->cruise_velocity >= bf->exit_velocity
+*/
+//**************************************************************************************************
+
+
+//**************************************************************************************************
 /*	Classes of moves:
  *
  *	  Requested-Fit - The move has sufficient length to achieve the target velocity
@@ -78,7 +86,7 @@
  *		the entry velocity to the exit velocity in the available length. These
  *		velocities are not negotiable, so a degraded solution is found.
  *
- *	  	In worst cases the move cannot be executed as the required execution time is
+ *	  In worst cases the move cannot be executed as the required execution time is
  *		less than the minimum segment time. The first degradation is to reduce the
  *		move to a body-only segment with an average velocity. If that still doesn't
  *		fit then the move velocity is reduced so it fits into a minimum segment.
@@ -108,37 +116,55 @@
  *	  	T"	Ve>Vx		Ve is degraded (velocity step). Vx is met
  *	  	B"	<short>		line is very short but drawable; is treated as a body only
  *		F	<too short>	force fit: This block is slowed down until it can be executed
- */
+*/
+//**************************************************************************************************
+
+
+//**************************************************************************************************
 /*	NOTE: The order of the cases/tests in the code is pretty important. Start with the
  *	  shortest cases first and work up. Not only does this simplify the order of the tests,
  *	  but it reduces execution time when you need it most - when tons of pathologically
  *	  short Gcode blocks are being thrown at you.
- */
+*/
+//**************************************************************************************************
 
-// The minimum lengths are dynamic and depend on the velocity
-// These expressions evaluate to the minimum lengths for the current velocity settings
-// Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
+
+//**************************************************************************************************
+/*
+ * The minimum lengths are dynamic and depend on the velocity
+ * These expressions evaluate to the minimum lengths for the current velocity settings
+ * Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
+*/
+//**************************************************************************************************
+
 #define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity + bf->entry_velocity))
-#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity + bf->exit_velocity))
-#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * bf->cruise_velocity)
+#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity + bf->exit_velocity ))
+#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity                     ))
 
 void mp_calculate_trapezoid(mpBuf_t *bf)
 {
-	//********************************************
-	//********************************************
-	//**   RULE #1 of mp_calculate_trapezoid()  **
-	//**        DON'T CHANGE bf->length         **
-	//********************************************
-	//********************************************
+	//**********************************************************************************************
+	/*
+	 * RULE #1 of mp_calculate_trapezoid()
+	 * DON'T CHANGE bf->length
+	*/
+	//**********************************************************************************************
 
-	// F case: Block is too short - run time < minimum segment time
-	// Force block into a single segment body with limited velocities
-	// Accept the entry velocity, limit the cruise, and go for the best exit velocity
-	// you can get given the delta_vmax (maximum velocity slew) supportable.
 
-	bf->naiive_move_time = 2 * bf->length / (bf->entry_velocity + bf->exit_velocity); // average
+	//**********************************************************************************************
+	/*
+	 * F case: Block is too short - run time < minimum segment time
+	 * Force block into a single segment body with limited velocities
+	 * Accept the entry velocity, limit the cruise, and go for the best exit velocity
+	 * you can get given the delta_vmax (maximum velocity slew) supportable.
+	*/
+	//**********************************************************************************************
 
-	if (bf->naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
+	// average move time by using entry and exit velocity
+	bf->naive_move_time = 2 * bf->length / (bf->entry_velocity + bf->exit_velocity);
+
+	if (bf->naive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN)
+	{
 		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
 		bf->body_length = bf->length;
@@ -149,19 +175,23 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	}
 
 	// B" case: Block is short, but fits into a single body segment
-
-	if (bf->naiive_move_time <= NOM_SEGMENT_TIME) {
+	if (bf->naive_move_time <= NOM_SEGMENT_TIME)
+	{
 		bf->entry_velocity = bf->pv->exit_velocity;
-		if (fp_NOT_ZERO(bf->entry_velocity)) {
+		if (fp_NOT_ZERO(bf->entry_velocity))
+		{
 			bf->cruise_velocity = bf->entry_velocity;
 			bf->exit_velocity = bf->entry_velocity;
-		} else {
+		}
+		else
+		{
 			bf->cruise_velocity = bf->delta_vmax / 2;
 			bf->exit_velocity = bf->delta_vmax;
 		}
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
+
 		// We are violating the jerk value but since it's a single segment move we don't use it.
 		return;
 	}
@@ -169,9 +199,9 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// B case:  Velocities all match (or close enough)
 	//			This occurs frequently in normal gcode files with lots of short lines
 	//			This case is not really necessary, but saves lots of processing time
-
 	if (((bf->cruise_velocity - bf->entry_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) &&
-	((bf->cruise_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE)) {
+	   ((bf->cruise_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE))
+   	{
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
@@ -184,10 +214,16 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 	bf->body_length = 0;
 	float minimum_length = mp_get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
-	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
 
-		if (bf->entry_velocity > bf->exit_velocity)	{		// tail-only cases (short decelerations)
-			if (bf->length < minimum_length) { 				// T" (degraded case)
+	// head-only & tail-only cases
+	if (bf->length <= (minimum_length + MIN_BODY_LENGTH))
+	{
+		// tail-only cases (short decelerations)
+		if (bf->entry_velocity > bf->exit_velocity)
+		{
+			// T" (degraded case)
+			if (bf->length < minimum_length)
+			{
 				bf->entry_velocity = mp_get_target_velocity(bf->exit_velocity, bf->length, bf);
 			}
 			bf->cruise_velocity = bf->entry_velocity;
@@ -196,8 +232,12 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			return;
 		}
 
-		if (bf->entry_velocity < bf->exit_velocity)	{		// head-only cases (short accelerations)
-			if (bf->length < minimum_length) { 				// H" (degraded case)
+		// head-only cases (short accelerations)
+		if (bf->entry_velocity < bf->exit_velocity)
+		{
+			// H" (degraded case)
+			if (bf->length < minimum_length)
+			{
 				bf->exit_velocity = mp_get_target_velocity(bf->entry_velocity, bf->length, bf);
 			}
 			bf->cruise_velocity = bf->exit_velocity;
@@ -210,19 +250,30 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// Set head and tail lengths for evaluating the next cases
 	bf->head_length = mp_get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = mp_get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
-	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
-	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
+
+	if (bf->head_length < MIN_HEAD_LENGTH)
+	{
+		bf->head_length = 0;
+	}
+	if (bf->tail_length < MIN_TAIL_LENGTH)
+	{
+		bf->tail_length = 0;
+	}
 
 	// Rate-limited HT and HT' cases
-	if (bf->length < (bf->head_length + bf->tail_length)) { // it's rate limited
 
+	// it's rate limited
+	if (bf->length < (bf->head_length + bf->tail_length))
+	{
 		// Symmetric rate-limited case (HT)
-		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) {
+		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE)
+		{
 			bf->head_length = bf->length/2;
 			bf->tail_length = bf->head_length;
 			bf->cruise_velocity = min(bf->cruise_vmax, mp_get_target_velocity(bf->entry_velocity, bf->head_length, bf));
 
-			if (bf->head_length < MIN_HEAD_LENGTH) {
+			if (bf->head_length < MIN_HEAD_LENGTH)
+			{
 				// Convert this to a body-only move
 				bf->body_length = bf->length;
 				bf->head_length = 0;
@@ -242,29 +293,41 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 		float computed_velocity = bf->cruise_vmax;
 		do {
-			bf->cruise_velocity = computed_velocity;	// initialize from previous iteration
+
+			// initialize from previous iteration
+			bf->cruise_velocity = computed_velocity;
 			bf->head_length = mp_get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 			bf->tail_length = mp_get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
-			if (bf->head_length > bf->tail_length) {
+
+			if (bf->head_length > bf->tail_length)
+			{
 				bf->head_length = (bf->head_length / (bf->head_length + bf->tail_length)) * bf->length;
 				computed_velocity = mp_get_target_velocity(bf->entry_velocity, bf->head_length, bf);
-			} else {
+			}
+			else
+			{
 				bf->tail_length = (bf->tail_length / (bf->head_length + bf->tail_length)) * bf->length;
 				computed_velocity = mp_get_target_velocity(bf->exit_velocity, bf->tail_length, bf);
 			}
 			// insert iteration trap here if needed
-		} while ((fabs(bf->cruise_velocity - computed_velocity) / computed_velocity) > TRAPEZOID_ITERATION_ERROR_PERCENT);
+		}
+		while ((fabs(bf->cruise_velocity - computed_velocity) / computed_velocity) > TRAPEZOID_ITERATION_ERROR_PERCENT);
 
 		// set velocity and clean up any parts that are too short
 		bf->cruise_velocity = computed_velocity;
 		bf->head_length = mp_get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 		bf->tail_length = bf->length - bf->head_length;
-		if (bf->head_length < MIN_HEAD_LENGTH) {
-			bf->tail_length = bf->length;			// adjust the move to be all tail...
+
+		if (bf->head_length < MIN_HEAD_LENGTH)
+		{
+			// adjust the move to be all tail...
+			bf->tail_length = bf->length;
 			bf->head_length = 0;
 		}
-		if (bf->tail_length < MIN_TAIL_LENGTH) {
-			bf->head_length = bf->length;			//...or all head
+		if (bf->tail_length < MIN_TAIL_LENGTH)
+		{
+			//...or all head
+			bf->head_length = bf->length;
 			bf->tail_length = 0;
 		}
 		return;
@@ -276,22 +339,35 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// If a non-zero body is < minimum length distribute it to the head and/or tail
 	// This will generate small (acceptable) velocity errors in runtime execution
 	// but preserve correct distance, which is more important.
-	if ((bf->body_length < MIN_BODY_LENGTH) && (fp_NOT_ZERO(bf->body_length))) {
-		if (fp_NOT_ZERO(bf->head_length)) {
-			if (fp_NOT_ZERO(bf->tail_length)) {			// HBT reduces to HT
+	if ((bf->body_length < MIN_BODY_LENGTH) && (fp_NOT_ZERO(bf->body_length)))
+	{
+		if (fp_NOT_ZERO(bf->head_length))
+		{
+			// HBT reduces to HT
+			if (fp_NOT_ZERO(bf->tail_length))
+			{
 				bf->head_length += bf->body_length/2;
 				bf->tail_length += bf->body_length/2;
-			} else {									// HB reduces to H
+			}
+			else
+			{
+				// HB reduces to H
 				bf->head_length += bf->body_length;
 			}
-		} else {										// BT reduces to T
+		}
+		else
+		{
+			// BT reduces to T
 			bf->tail_length += bf->body_length;
 		}
 		bf->body_length = 0;
 
 	// If the body is a standalone make the cruise velocity match the entry velocity
 	// This removes a potential velocity discontinuity at the expense of top speed
-	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
+	}
+   	else
+	if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length)))
+	{
 		bf->cruise_velocity = bf->entry_velocity;
 	}
 }
@@ -402,7 +478,7 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 
 //*** GET_VELOCITY_ITERATIONS must be one of 0, 1, 2 ***********************************************
 //
-#define GET_VELOCITY_ITERATIONS 	         0		
+#define GET_VELOCITY_ITERATIONS 	         0
 
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 {

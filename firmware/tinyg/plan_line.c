@@ -1,3 +1,4 @@
+//**************************************************************************************************
 /*
  * plan_line.c - acceleration managed line planning and motion execution
  * This file is part of the TinyG project
@@ -24,7 +25,8 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+*/
+//**************************************************************************************************
 
 #include "tinyg.h"
 #include "config.h"
@@ -35,13 +37,16 @@
 #include "report.h"
 #include "util.h"
 
-// aline planner routines / feedhold planning
-//static void _calc_move_times(GCodeState_t *gms, const float position[]);
+
+//*** aline planner routines, feedhold planning ****************************************************
+//
 static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
 
+
+//**************************************************************************************************
 /* Runtime-specific setters and getters
  *
  * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
@@ -50,7 +55,8 @@ static void _reset_replannable_list(void);
  * mp_set_runtime_work_offset()		- set offsets in the MR struct
  * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
  *									  that were in effect at move planning time
- */
+*/
+//**************************************************************************************************
 
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
@@ -58,12 +64,15 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 
+
+//**************************************************************************************************
 /*
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
  *
  *	Use this function to sync to the queue. If you wait until it returns
  *	FALSE you know the queue is empty and the motors have stopped.
- */
+*/
+//**************************************************************************************************
 
 uint8_t mp_get_runtime_busy()
 {
@@ -554,14 +563,14 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 			// other blocks in the list
 			bp->entry_velocity = bp->pv->exit_velocity;
 		}
+		
 		bp->cruise_velocity = bp->cruise_vmax;
 		bp->exit_velocity = min4(bp->exit_vmax, bp->nx->entry_vmax, bp->nx->braking_velocity, (bp->entry_velocity + bp->delta_vmax));
 		mp_calculate_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
 		if  ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) || (fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) ) ||
-			  ( (bp->pv->replannable == false) &&
-				(fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) )
+			  ( (bp->pv->replannable == false) && (fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) )
 		{
 			bp->replannable = false;
 		}

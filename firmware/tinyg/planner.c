@@ -423,10 +423,6 @@ mpBuf_t * mp_get_last_buffer(void)
 	return (bp);
 }
 
-// Use the macro instead
-//mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf) return (bf->pv);
-//mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf) return (bf->nx);
-
 void mp_clear_buffer(mpBuf_t *bf)
 {
 	mpBuf_t *nx = bf->nx;			// save pointers

@@ -1,3 +1,4 @@
+//**************************************************************************************************
 /*
  * planner.h - cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
@@ -24,12 +25,13 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+*/
+//**************************************************************************************************
 
 #ifndef PLANNER_H_ONCE
 #define PLANNER_H_ONCE
 
-#include "canonical_machine.h"	// used for GCodeState_t
+#include "canonical_machine.h"
 /*
 #ifdef __cplusplus
 extern "C"{
@@ -140,7 +142,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec_t cm_func;				// callback to canonical machine execution function
 
-	float naiive_move_time;
+	float   naive_move_time;
 
 	uint8_t buffer_state;			// used to manage queuing/dequeuing
 	uint8_t move_type;				// used to dispatch to run routine
@@ -297,9 +299,8 @@ uint8_t mp_free_run_buffer(void);
 mpBuf_t * mp_get_first_buffer(void);
 mpBuf_t * mp_get_last_buffer(void);
 
-//mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf);
-//mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf);
-#define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))	// use the macro instead
+// use the macro instead
+#define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))	
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
 void mp_clear_buffer(mpBuf_t *bf);
