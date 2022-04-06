@@ -296,8 +296,11 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	}
 }
 
+
+
+//**************************************************************************************************
 /*
- * mp_get_target_length()	  - derive accel/decel length from delta V and jerk
+ * mp_get_target_length()	- derive accel/decel length from delta V and jerk
  * mp_get_target_velocity() - derive velocity achievable from delta V and length
  *
  *	This set of functions returns the fourth thing knowing the other three.
@@ -326,7 +329,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
  *			T  = 2*sqrt((Vf-Vi)/Jm)			T is time
  *			Assumes Vi, Vf and L are positive or zero
  *			Cannot assume Vf>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
- *			  necessitating the introduction of fabs()
+ *			necessitating the introduction of fabs()
  *
  * 	mp_get_target_velocity() is a convenient function for determining Vf target velocity for
  *	a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
@@ -337,14 +340,19 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
  *
  *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
- */
+*/
+//**************************************************************************************************
 
 float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 {
-//	return (Vi + Vf) * sqrt(fabs(Vf - Vi) * bf->recip_jerk);		// new formula
+//	return      (Vi+Vf) * sqrt(fabs(Vf-Vi) * bf->recip_jerk);		// new formula
 	return (fabs(Vi-Vf) * sqrt(fabs(Vi-Vf) * bf->recip_jerk));		// old formula
 }
 
+
+
+
+//**************************************************************************************************
 /* Regarding mp_get_target_velocity:
  *
  * We do some Newton-Raphson iterations to narrow it down.
@@ -362,6 +370,7 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
  * There are (at least) two such functions we can use:
  *      L from J, Vi, and Vf
  *      L = sqrt((Vf - Vi) / J) (Vi + Vf)
+ *
  *   Replacing Vf with x, and subtracting the known L:
  *      0 = sqrt((x - Vi) / J) (Vi + x) - L
  *      Z(x) = sqrt((x - Vi) / J) (Vi + x) - L
@@ -369,10 +378,11 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
  *  OR
  *
  *      J from L, Vi, and Vf
- *      J = ((Vf - Vi) (Vi + Vf)²) / L²
+ *      J = ((Vf - Vi) (Vi + Vf)^2 / L^2
+ *
  *  Replacing Vf with x, and subtracting the known J:
- *      0 = ((x - Vi) (Vi + x)²) / L² - J
- *      Z(x) = ((x - Vi) (Vi + x)²) / L² - J
+ *      0 = ((x - Vi) (Vi + x)^2 / L^2 - J
+ *      Z(x) = ((x - Vi) (Vi + x)^2 / L^2 - J
  *
  *  L doesn't resolve to the value very quickly (it graphs near-vertical).
  *  So, we'll use J, which resolves in < 10 iterations, often in only two or three
@@ -386,10 +396,14 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
  *  SqrtDeltaOverJ = sqrt((x-Vi) / J)
  *  L'(x) = SqrtDeltaOverJ + (Vi + x) / (2*J) + (Vi + x) / (2*SqrtDeltaJ)
  *
- *  J'(x) = (2*Vi*x - Vi² + 3*x²) / L²
- */
+ *  J'(x) = (2*Vi*x - Vi^2 + 3*x^2 / L^2
+*/
+//**************************************************************************************************
 
-#define GET_VELOCITY_ITERATIONS 0		// must be 0, 1, or 2
+//*** GET_VELOCITY_ITERATIONS must be one of 0, 1, 2 ***********************************************
+//
+#define GET_VELOCITY_ITERATIONS 	         0		
+
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 {
     // 0 iterations (a reasonable estimate)
@@ -411,3 +425,4 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 #endif
     return estimate;
 }
+
