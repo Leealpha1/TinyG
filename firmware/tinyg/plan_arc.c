@@ -1,3 +1,4 @@
+//**************************************************************************************************
 /*
  * plan_arc.c - arc planning and motion execution
  * This file is part of the TinyG project
@@ -15,11 +16,16 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-/* This module actually contains some parts that belong ion the canonical machine,
+*/
+//**************************************************************************************************
+
+//**************************************************************************************************
+/*
+ * This module actually contains some parts that belong ion the canonical machine,
  * and other parts that belong at the motion planner level, but the whole thing is
  * treated as if it were part of the motion planner.
- */
+*/
+//**************************************************************************************************
 
 #include "tinyg.h"
 #include "config.h"
@@ -111,6 +117,8 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
     	arc.plane_axis_0 = AXIS_X;
     	arc.plane_axis_1 = AXIS_Y;
     	arc.linear_axis  = AXIS_Z;
+
+		// flags means this is radius format
         if (radius_f)
 		{
 			// must have at least one endpoint specified
@@ -119,8 +127,9 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
         	    return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
             }
         }
+		// center format arc tests
 		else
-		{   // center format arc tests
+		{   
             if (offset_k)
 			{
 				// it's OK to be missing either or both i and j, but error if k is present
@@ -136,6 +145,8 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
     	arc.plane_axis_0 = AXIS_X;
     	arc.plane_axis_1 = AXIS_Z;
     	arc.linear_axis  = AXIS_Y;
+
+		// flags means this is radius format
         if (radius_f)
 		{
             if (!(target_x || target_z))
@@ -159,6 +170,8 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
     	arc.plane_axis_0 = AXIS_Y;
     	arc.plane_axis_1 = AXIS_Z;
     	arc.linear_axis  = AXIS_X;
+
+		// flags means this is radius format
         if (radius_f)
 		{
             if (!(target_y || target_z))
